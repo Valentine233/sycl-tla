@@ -269,6 +269,13 @@ template <class FMHAKernel, bool isVarLen = false> struct ExampleRunner {
       return result;
     };
 
+    auto generate_optional_length = [&](int target_length, auto& dist, auto& gen, int alignment) {
+      if (target_length == 0) {
+        return 0;
+      }
+      return cutlass::round_up(generate_positive_int(dist, gen), alignment);
+    };
+
     cumulative_seqlen_q = {0};
     cumulative_seqlen_kv = {0};
     cumulative_seqlen_kv_cache = {0};
@@ -281,9 +288,9 @@ template <class FMHAKernel, bool isVarLen = false> struct ExampleRunner {
     int max_seqlen_kv_cache = 0;
 
     for (int i = 0; i < num_batches; i++) {
-      int seqlen_q = cutlass::round_up(generate_positive_int(dist_q, rng), AlignmentQ);
-      int seqlen_kv = cutlass::round_up(generate_positive_int(dist_kv, rng), AlignmentKV);
-      int seqlen_kv_cache = get<5>(problem_size) == 0 ? 0 : cutlass::round_up(generate_positive_int(dist_kv_cache, rng), AlignmentKVCache);
+      int seqlen_q = generate_optional_length(get<3>(problem_size), dist_q, rng, AlignmentQ);
+      int seqlen_kv = generate_optional_length(get<4>(problem_size), dist_kv, rng, AlignmentKV);
+      int seqlen_kv_cache = generate_optional_length(get<5>(problem_size), dist_kv_cache, rng, AlignmentKVCache);
 
       total_seqlen_q += seqlen_q;
       total_seqlen_kv += seqlen_kv;
